@@ -28,7 +28,7 @@ class Edge(object):
     self.dest_name_ = edge_proto.dest
     self.num_modules_y_ = 1
     self.num_modules_x_ = 1
-    self.name_ = '%s:%s' % (self.source_name_, self.dest_name_)
+    self.name_ = f'{self.source_name_}:{self.dest_name_}'
 
   def SetSource(self, l):
     self.source_ = l
@@ -75,11 +75,12 @@ class EdgeWithWeight(Edge):
     self.bias_ = None
 
   def LoadParams(self, f):
-    w_name = '%s:weight' % self.name_
+    w_name = f'{self.name_}:weight'
     w = f[w_name].value.T
-    assert self.weights_.shape == w.shape, "Shape mismatch %s %s %s" % (w_name, self.weights_.shape, w.shape)
+    assert (self.weights_.shape == w.shape
+            ), f"Shape mismatch {w_name} {self.weights_.shape} {w.shape}"
     self.weights_.overwrite(w)
-    b_name = '%s:bias' % self.name_
+    b_name = f'{self.name_}:bias'
     b = f[b_name].value.reshape(1, -1)
     assert self.bias_.shape == b.shape, "Shape mismatch %s" % (b_name, self.bias_.shape, b.shape)
     self.bias_.overwrite(b)

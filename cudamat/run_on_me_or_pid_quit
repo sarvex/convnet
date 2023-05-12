@@ -9,6 +9,7 @@ interrupted.
 Iain Murray, November 2009, January 2010
 """
 
+
 # "Daemonize" this job to stop it getting killed by KeyboardInterrupt when
 # pressing Ctrl-c in an interactive python session.
 import os
@@ -21,7 +22,7 @@ if os.fork() != 0:
 import sys, os.path, time, signal
 
 pid = sys.argv[1]
-proc_file = '/proc/' + pid
+proc_file = f'/proc/{pid}'
 
 def final():
     os.execv(sys.argv[2], sys.argv[2:])

@@ -15,15 +15,12 @@ class ConvNet(object):
     self.layer_ = []
     self.edge_ = []
     L = self.Sort()  # Topological sort.
-    for l in L:
-      self.layer_.append(ChooseLayer(l))
-    for e in self.model_.edge:
-      self.edge_.append(ChooseEdge(e))
-   
+    self.layer_.extend(ChooseLayer(l) for l in L)
+    self.edge_.extend(ChooseEdge(e) for e in self.model_.edge)
     for l in self.layer_:
       for e in self.edge_:
         l_name = l.GetName()
-        
+
         if l_name == e.GetSourceName():
           l.AddOutgoingEdge(e)
           e.SetSource(l)
@@ -48,7 +45,7 @@ class ConvNet(object):
 
   def Sort(self):
     def GetName(edge):
-      return '%s:%s' % (edge.source, edge.dest)
+      return f'{edge.source}:{edge.dest}'
 
     model = self.model_
     S = []
@@ -65,7 +62,7 @@ class ConvNet(object):
     for l in model.layer:
       if len(incoming_edge[l.name]) == 0:
         S.append(l)
-    while len(S) > 0:
+    while S:
       n = S.pop()
       L.append(n)
       for e in outgoing_edge[n.name]:

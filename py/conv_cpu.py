@@ -429,20 +429,14 @@ def AvgPoolUndo(derivs, image_shape, conv_spec):
 
 
 def GetBounds(i, numF, num_channels, blocked):
-  if blocked:
-    startPos = (i / numF) * numF
-  else:
-    startPos = i - numF/2
+  startPos = (i / numF) * numF if blocked else i - numF/2
   endPos = min(startPos + numF, num_channels)
   startPos = max(0, startPos)
   return startPos, endPos
 
 def GetBoundsInv(i, numF, num_channels, blocked):
   """Return the set of filters such that i appears in their normalization group."""
-  if blocked:
-    startPos = (i / numF) * numF
-  else:
-    startPos = i - numF + numF/2 + 1
+  startPos = (i / numF) * numF if blocked else i - numF + numF/2 + 1
   endPos = min(startPos + numF, num_channels)
   startPos = max(0, startPos)
   return startPos, endPos

@@ -381,8 +381,7 @@ def TestAvgPool3DUndo(images_shape, conv_desc):
 
 def Diff(a, b):
   scale = np.abs(a + b).mean()
-  diff = np.abs(a - b).max() / scale
-  return diff
+  return np.abs(a - b).max() / scale
 
 def Check(diff, tol=1e-4):
   if diff < tol:

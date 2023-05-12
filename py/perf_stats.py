@@ -5,10 +5,7 @@ import os
 
 def ReadLog(fnames):
   data = [np.loadtxt(fname, ndmin=2) for fname in fnames if os.path.exists(fname)]
-  if len(data) == 0:
-    return None
-  else:
-    return np.vstack(tuple(data))
+  return None if not data else np.vstack(tuple(data))
 
 def GetAllTimestamps(prefix, timestamp):
   timestamps = []
@@ -27,10 +24,10 @@ def GetAllTimestamps(prefix, timestamp):
 
 def ReadTrainLog(prefix, timestamp):
   timestamps = GetAllTimestamps(prefix, timestamp)
-  fnames = [prefix + '_' + timestamp + '_train.log' for timestamp in timestamps]
+  fnames = [f'{prefix}_{timestamp}_train.log' for timestamp in timestamps]
   return ReadLog(fnames)
 
 def ReadValLog(prefix, timestamp):
   timestamps = GetAllTimestamps(prefix, timestamp)
-  fnames = [prefix + '_' + timestamp + '_valid.log' for timestamp in timestamps]
+  fnames = [f'{prefix}_{timestamp}_valid.log' for timestamp in timestamps]
   return ReadLog(fnames)

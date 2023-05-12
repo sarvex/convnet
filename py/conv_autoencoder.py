@@ -137,7 +137,7 @@ def Train(data_handle, model_filename):
   for i in xrange(1, max_iter+1):
     sys.stdout.write('\r%d' % i)
     sys.stdout.flush()
-   
+
     # Fprop.
     data_handle.GetBatch(v)
     v_noise.fill_with_randn()
@@ -161,17 +161,17 @@ def Train(data_handle, model_filename):
     cc_gemm.convUp(deriv_v, w_dec, deriv_h, conv_desc)
     deriv_h.mult(1.0/(1.0- dropprob))
     deriv_h.apply_rectified_linear_deriv(h)
-   
+
     cc_gemm.AddUpAllLocs(deriv_h, db_enc)
     cc_gemm.convOutp(v_noise, deriv_h, dw_enc, conv_desc)
     cc_gemm.convOutp(deriv_v, h, dw_dec, conv_desc)
 
     # Update weights.
-    eps = float(epsilon)/batch_size
+    eps = epsilon / batch_size
     Update(w_enc, dw_enc, dw_enc_history, momentum, eps, l2_decay)
     Update(w_dec, dw_dec, dw_dec_history, momentum, eps, l2_decay)
     Update(b_enc, db_enc, db_enc_history, momentum, eps, 0)
-  
+
     if i % display_after == 0:
       DisplayImages([v.asarray()[0, :], v_noise.asarray()[0, :], v_rec.asarray()[0, :], deriv_v.asarray()[0, :]], image_size_y, image_size_x, fig=1)
       DisplayWeights([(w_enc.asarray(), w_enc.shape4d), (w_dec.asarray(), w_dec.shape4d)])
@@ -188,7 +188,8 @@ def main():
   st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M%S')
   data_filename = '/nobackup/nitish/imagenet/imagenet_train.h5'
   mean_filename = '/ais/gobi3/u/nitish/imagenet/pixel_mean.h5'
-  model_filename = '/ais/gobi3/u/nitish/imagenet/models/conv_autonecoder_%s.h5' % st
+  model_filename = (
+      f'/ais/gobi3/u/nitish/imagenet/models/conv_autonecoder_{st}.h5')
   batch_size = 128
   data_handle = DataHandler(data_filename, mean_filename, 256, 256, 224, 224, batch_size, 128)
   Train(data_handle, model_filename)

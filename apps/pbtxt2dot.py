@@ -28,18 +28,17 @@ def AddSubnet(model, subnet):
   for s in submodel.subnet:
     AddSubnet(submodel, s)
   name = subnet.name
-  merge_layers = {}
-  remove_layers = []
-  for merged_layer in subnet.merge_layer:
-    merge_layers[merged_layer.subnet_layer] = merged_layer.net_layer
-  for l in subnet.remove_layer:
-    remove_layers.append(l)
+  merge_layers = {
+      merged_layer.subnet_layer: merged_layer.net_layer
+      for merged_layer in subnet.merge_layer
+  }
+  remove_layers = list(subnet.remove_layer)
   for layer in submodel.layer:
     if layer.name not in merge_layers and layer.name not in remove_layers:
       l = model.layer.add()
       l.CopyFrom(layer)
-      l.name = name + "_" + layer.name
-      l.num_channels = layer.num_channels * subnet.num_channels_multiplier  
+      l.name = f"{name}_{layer.name}"
+      l.num_channels = layer.num_channels * subnet.num_channels_multiplier
       l.gpu_id = layer.gpu_id + subnet.gpu_id_offset
   for edge in submodel.edge:
     if edge.source in remove_layers or edge.dest in remove_layers:
@@ -47,14 +46,8 @@ def AddSubnet(model, subnet):
     e = model.edge.add()
     e.CopyFrom(edge)
     e.gpu_id = e.gpu_id + subnet.gpu_id_offset
-    if edge.source in merge_layers:
-      e.source = merge_layers[edge.source]
-    else:
-      e.source = name + "_" + edge.source
-    if edge.dest in merge_layers:
-      e.dest = merge_layers[edge.dest]
-    else:
-      e.dest = name + "_" + edge.dest
+    e.source = merge_layers.get(edge.source, f"{name}_{edge.source}")
+    e.dest = merge_layers.get(edge.dest, f"{name}_{edge.dest}")
 
 def SetIO(model):
   dest_layers = []
@@ -70,21 +63,15 @@ def SetIO(model):
 
 
 def Sort(model):
-  S = []
   L = []
   outgoing_edge = {}
   incoming_edge = {}
-  mark = {}
   for l in model.layer:
     outgoing_edge[l.name] = [e for e in model.edge if e.source == l.name]
     incoming_edge[l.name] = [e for e in model.edge if e.dest == l.name]
-  for e in model.edge:
-    mark[GetName(e)] = False
-
-  for l in model.layer:
-    if l.is_input:
-      S.append(l)
-  while len(S) > 0:
+  mark = {GetName(e): False for e in model.edge}
+  S = [l for l in model.layer if l.is_input]
+  while S:
     n = S.pop()
     L.append(n)
     for e in outgoing_edge[n.name]:
@@ -106,7 +93,7 @@ def GetSizes(model):
       e = next(e for e in model.edge if e.dest == l.name)
       source_name = e.source
       if e.tied_to != "":
-        e = next(ee for ee in model.edge if e.tied_to == '%s:%s' % (ee.source, ee.dest))
+        e = next(ee for ee in model.edge if e.tied_to == f'{ee.source}:{ee.dest}')
       if e.edge_type == convnet_config_pb2.Edge.FC:
         size = 1
       elif e.edge_type == convnet_config_pb2.Edge.RESPONSE_NORM:
@@ -133,26 +120,22 @@ def main():
     AddSubnet(model, subnet)
   SetIO(model)
   size_dict = GetSizes(model)
-  
-  output = open(sys.argv[2], 'w')
-  output.write('digraph G {\n')
 
-  show_gpu = True
-  for l in model.layer:
-    size = size_dict[l.name]
-    txt = "%s\\n %d - %d - %d" % (l.name, size, size, l.num_channels)
-    if show_gpu:
-      txt += " (%d)" % l.gpu_id
-    output.write('%s [shape=box, label = "%s"];\n' % (l.name, txt))
-  for e in model.edge:
-    if e.tied_to:
-      color = "blue"
-    else:
-      color = "black"
-    txt = "(%d)" % (e.gpu_id)
-    output.write('%s -> %s [dir="back", color=%s, label="%s"];\n' % (e.dest, e.source, color, txt))
-  output.write('}\n')
-  output.close()
+  with open(sys.argv[2], 'w') as output:
+    output.write('digraph G {\n')
+
+    show_gpu = True
+    for l in model.layer:
+      size = size_dict[l.name]
+      txt = "%s\\n %d - %d - %d" % (l.name, size, size, l.num_channels)
+      if show_gpu:
+        txt += " (%d)" % l.gpu_id
+      output.write('%s [shape=box, label = "%s"];\n' % (l.name, txt))
+    for e in model.edge:
+      color = "blue" if e.tied_to else "black"
+      txt = "(%d)" % (e.gpu_id)
+      output.write('%s -> %s [dir="back", color=%s, label="%s"];\n' % (e.dest, e.source, color, txt))
+    output.write('}\n')
 
 if __name__ == '__main__':
   main()
